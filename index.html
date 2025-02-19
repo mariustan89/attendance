@@ -102,11 +102,23 @@
                     
                     // Perform clock-in or clock-out action
                     handleClocking(decodedText);
+                    
+                    // Stop the scanner after one successful scan
+                    stopScanner();
                 },
                 (error) => {
                     console.log(error); // Log any errors for debugging
                 }
             );
+        }
+
+        function stopScanner() {
+            // Stop the QR scanner after one successful scan
+            qrScanner.stop().then(() => {
+                console.log("Scanner stopped");
+            }).catch((error) => {
+                console.log("Error stopping scanner: ", error);
+            });
         }
 
         function handleClocking(qrData) {
