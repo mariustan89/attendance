@@ -103,8 +103,9 @@
                     // Perform clock-in or clock-out action
                     handleClocking(decodedText);
                     
-                    // Stop the scanner after one successful scan
+                    // Stop the scanner after one successful scan and restart after 2 seconds
                     stopScanner();
+                    setTimeout(startScanner, 2000);  // Restart scanning after 2 seconds
                 },
                 (error) => {
                     console.log(error); // Log any errors for debugging
