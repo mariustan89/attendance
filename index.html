@@ -171,7 +171,7 @@
         }
 
         function handleClocking(qrData) {
-            const currentTime = new Date().toLocaleString(); // Get the current time
+            const currentTime = new Date(); // Get the current time as Date object
 
             // If the worker is already clocked in, clock them out
             if (isClockedIn) {
@@ -179,10 +179,10 @@
                 if (!attendanceData[qrData]) {
                     attendanceData[qrData] = { clockIn: "", clockOut: "" };
                 }
-                attendanceData[qrData].clockOut = currentTime;
+                attendanceData[qrData].clockOut = currentTime.toISOString(); // Save as ISO string for consistency
 
                 const clockInTime = new Date(attendanceData[qrData].clockIn);
-                const clockOutTime = new Date(currentTime);
+                const clockOutTime = new Date(attendanceData[qrData].clockOut);
                 const hoursWorked = (clockOutTime - clockInTime) / 1000 / 60 / 60; // Convert milliseconds to hours
 
                 document.getElementById("status").innerText = `Status: Clocked Out (Worked: ${hoursWorked.toFixed(2)} hours)`;
@@ -192,7 +192,7 @@
                 if (!attendanceData[qrData]) {
                     attendanceData[qrData] = { clockIn: "", clockOut: "" };
                 }
-                attendanceData[qrData].clockIn = currentTime;
+                attendanceData[qrData].clockIn = currentTime.toISOString(); // Save as ISO string for consistency
 
                 document.getElementById("status").innerText = "Status: Clocked In";
                 isClockedIn = true;
@@ -203,6 +203,10 @@
         }
 
         function showAttendancePage() {
+            // Hide the QR scanner and box overlay when displaying the attendance page
+            document.getElementById("reader").style.display = "none";
+            document.querySelector(".scanner-box").style.display = "none";
+
             // Display the attendance page with clock-in and clock-out times
             let data = JSON.parse(localStorage.getItem("attendanceData")) || {};
             let table = "<table><tr><th>QR Code</th><th>Clock In</th><th>Clock Out</th><th>Hours Worked</th></tr>";
@@ -223,6 +227,10 @@
 
             table += "</table>";
             document.getElementById("attendanceSheet").innerHTML = table;
+        }
+
+        function viewAttendance() {
+            showAttendancePage(); // Show attendance sheet when the button is clicked
         }
 
         startScanner();
