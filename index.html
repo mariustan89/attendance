@@ -3,34 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Attendance</title>
+    <title>Attendance System</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
-    <h1>Worker Attendance System</h1>
 
-    <!-- QR Code Scanner -->
-    <div id="reader" style="width: 300px; margin: auto;"></div>
-    <p>Scanned Worker ID: <span id="workerID"></span></p>
+    <!-- Your content goes here, like the QR scanner box -->
 
-    <button onclick="clockInOut()">Clock In/Out</button>
+    <div id="reader"></div>
 
-    <h2>Attendance Records</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Worker ID</th>
-                <th>Clock In</th>
-                <th>Clock Out</th>
-                <th>Total Hours</th>
-            </tr>
-        </thead>
-        <tbody id="attendanceTable"></tbody>
-    </table>
+    <p>Worker ID: <span id="workerID"></span></p>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-    <script src="script.js"></script>
+    <button onclick="clockInOut(document.getElementById('workerID').innerText)">Clock In/Out</button>
+
+    <!-- Script goes here -->
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <script>
+        window.onload = function() {
+            console.log("Page Loaded. Starting QR scanner...");
+            startQRScanner();
+            loadAttendance();
+        };
+
+        function startQRScanner() {
+            console.log("startQRScanner called");
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert("Camera access is not supported on this browser.");
+                console.log("Camera access is not supported.");
+                return;
+            }
+
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(() => {
+                    console.log("Camera permission granted");
+
+                    let scanner = new Html5QrcodeScanner("reader", {
+                        fps: 10,
+                        qrbox: 250
+                    });
+
+                    scanner.render((decodedText) => {
+                        console.log("QR code detected:", decodedText);
+                        document.getElementById("workerID").innerText = decodedText;
+                        scanner.clear(); // Stop scanner after scan
+                        clockInOut(decodedText); // Automatically log attendance
+                    });
+                })
+                .catch(err => {
+                    alert("Camera permission denied. Enable it in Chrome settings.");
+                    console.error("Camera error:", err);
+                });
+        }
+
+        function clockInOut(workerID) {
+            if (!workerID) {
+                alert("No QR code detected!");
+                return;
+            }
+
+            let now = new Date();
+            alert(`Clocking in/out for Worker ID: ${workerID} at ${now}`);
+        }
+
+        async function loadAttendance() {
+            console.log("Loading attendance...");
+            // You can populate the attendance table here later if needed
+        }
+    </script>
+
 </body>
 </html>
