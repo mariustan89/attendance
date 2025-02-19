@@ -6,7 +6,14 @@
     <title>QR Scanner Test</title>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
-        /* Ensure the camera feed covers the whole screen */
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        /* Camera Feed Area */
         #reader {
             width: 100%;
             height: 100%;
@@ -16,25 +23,25 @@
             z-index: 1;
         }
 
-        /* Box overlay for better scanning experience */
+        /* Box to show where QR code is being scanned */
         .scanner-box {
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 70%;
+            width: 80%;
             height: 50%;
             border: 2px solid rgba(0, 255, 0, 0.7); /* Green box */
             transform: translate(-50%, -50%);
             z-index: 2;
         }
 
-        /* Text to show the scanned QR code */
+        /* Display Result (QR Code data) */
         #result {
             position: absolute;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 20px;
+            font-size: 18px;
             color: white;
             background-color: rgba(0, 0, 0, 0.5);
             padding: 10px;
@@ -42,12 +49,12 @@
     </style>
 </head>
 <body>
-    <h1 style="text-align: center; color: white;">QR Scanner Test</h1>
+    <h1>QR Scanner Test</h1>
     
-    <!-- Camera Feed -->
+    <!-- Camera Feed Area for QR scanning -->
     <div id="reader"></div>
     
-    <!-- Scanner box -->
+    <!-- Box overlay to help with scanning -->
     <div class="scanner-box"></div>
 
     <!-- Display scanned QR code data -->
@@ -61,16 +68,28 @@
             qrScanner.start(
                 { facingMode: "environment" }, // Use the back camera
                 {
-                    fps: 10,          // Frame rate (frames per second)
+                    fps: 10, // Frame rate (frames per second)
                     qrbox: (width, height) => {
-                        // Adjust the QR box to be 70% of screen width and 50% of screen height
+                        // Dynamically size the QR scanning box based on the screen size
                         const qrboxSize = Math.min(width, height);
                         return {
-                            width: qrboxSize * 0.7,
-                            height: qrboxSize * 0.5
+                            width: qrboxSize * 0.8,  // 80% of screen width
+                            height: qrboxSize * 0.5  // 50% of screen height
                         };
                     }
                 },
                 (decodedText) => {
                     // When QR code is detected, display the result
-                    document.getElementById("res
+                    document.getElementById("result").innerText = decodedText;
+                },
+                (error) => {
+                    console.log(error); // Log any errors for debugging
+                }
+            );
+        }
+
+        // Start the QR scanner immediately after page load
+        startScanner();
+    </script>
+</body>
+</html>
