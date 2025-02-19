@@ -132,18 +132,22 @@
         // Function to handle clocking out
         function clockOut() {
             const currentTime = new Date(); // Get the current time
-            attendanceData[currentQRCode].clockOut = currentTime.toISOString(); // Save clock-out time
 
-            const clockInTime = new Date(attendanceData[currentQRCode].clockIn);
-            const clockOutTime = new Date(attendanceData[currentQRCode].clockOut);
-            const hoursWorked = (clockOutTime - clockInTime) / 1000 / 60 / 60; // Calculate hours worked
+            // If clock-in time exists, clock out and calculate worked hours
+            if (attendanceData[currentQRCode] && attendanceData[currentQRCode].clockIn) {
+                attendanceData[currentQRCode].clockOut = currentTime.toISOString(); // Save clock-out time
 
-            document.getElementById("status").innerText = `Status: Clocked Out (Worked: ${hoursWorked.toFixed(2)} hours)`;
-            isClockedIn = false;
-            document.getElementById("clockOutBtn").style.display = "none"; // Hide clock-out button
+                const clockInTime = new Date(attendanceData[currentQRCode].clockIn);
+                const clockOutTime = new Date(attendanceData[currentQRCode].clockOut);
+                const hoursWorked = (clockOutTime - clockInTime) / 1000 / 60 / 60; // Calculate hours worked
 
-            // Save updated attendance data in localStorage
-            localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+                document.getElementById("status").innerText = `Status: Clocked Out (Worked: ${hoursWorked.toFixed(2)} hours)`;
+                isClockedIn = false;
+                document.getElementById("clockOutBtn").style.display = "none"; // Hide clock-out button
+
+                // Save updated attendance data in localStorage
+                localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+            }
         }
 
         // Function to display attendance records
