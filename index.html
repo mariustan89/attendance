@@ -1,118 +1,105 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Scanner with Clock-in/Clock-out</title>
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
-    <style>
-        /* Same styles as before... */
-    </style>
-</head>
-<body>
-    <h1>QR Scanner for Clock-In/Clock-Out</h1>
-    
-    <div id="reader"></div>
-    <div class="scanner-box"></div>
-    <p id="result">QR Code Data will appear here</p>
-    <p id="status">Status: Not Clocked In</p>
+let isClockedIn = false;
+let attendanceData = JSON.parse(localStorage.getItem("attendanceData")) || {};
+let currentQRCode = null;
+let isProcessing = false;  // This flag will prevent re-triggering the clocking function
 
-    <!-- New button to manually clock out -->
-    <button id="clockOutBtn" style="display:none;" onclick="clockOut()">Clock Out</button>
+function startScanner() {
+    qrScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 300, height: 300 } },
+        (decodedText) => {
+            // If we are already processing (clocking in/out), don't do anything
+            if (isProcessing) return;
 
-    <button onclick="viewAttendance()">View Attendance</button>
-    <div id="attendanceSheet"></div>
-
-    <script>
-        const qrScanner = new Html5Qrcode("reader");
-
-        let isClockedIn = false;
-        let attendanceData = JSON.parse(localStorage.getItem("attendanceData")) || {};
-        let currentQRCode = null; // To store the scanned QR code for the current worker
-
-        function startScanner() {
-            qrScanner.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 300, height: 300 } },
-                (decodedText) => {
-                    document.getElementById("result").innerText = decodedText;
-                    handleClocking(decodedText);
-                },
-                (error) => {
-                    console.log(error);
-                }
-            );
+            document.getElementById("result").innerText = decodedText;
+            handleClocking(decodedText);
+        },
+        (error) => {
+            console.log(error);
         }
+    );
+}
 
-        function stopScanner() {
-            qrScanner.stop().then(() => {
-                console.log("Scanner stopped");
-            }).catch((error) => {
-                console.log("Error stopping scanner: ", error);
-            });
+function stopScanner() {
+    qrScanner.stop().then(() => {
+        console.log("Scanner stopped");
+    }).catch((error) => {
+        console.log("Error stopping scanner: ", error);
+    });
+}
+
+function handleClocking(qrData) {
+    // Set the flag to indicate processing
+    isProcessing = true;
+
+    currentQRCode = qrData; // Store the scanned QR data
+    const currentTime = new Date(); // Get the current time
+
+    if (isClockedIn) {
+        // Clock-out logic
+        clockOut();
+    } else {
+        // Clock-in logic
+        if (!attendanceData[qrData]) {
+            attendanceData[qrData] = { clockIn: "", clockOut: "" };
         }
+        attendanceData[qrData].clockIn = currentTime.toISOString(); // Save clock-in time
+        document.getElementById("status").innerText = "Status: Clocked In";
 
-        function handleClocking(qrData) {
-            currentQRCode = qrData; // Store the scanned QR data
+        isClockedIn = true;
+        document.getElementById("clockOutBtn").style.display = "inline"; // Show clock-out button
+    }
 
-            const currentTime = new Date(); // Get the current time
+    // Save updated attendance data
+    localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
 
-            if (isClockedIn) {
-                // Clock-out logic
-                clockOut();
-            } else {
-                // Clock-in logic
-                if (!attendanceData[qrData]) {
-                    attendanceData[qrData] = { clockIn: "", clockOut: "" };
-                }
-                attendanceData[qrData].clockIn = currentTime.toISOString(); // Save clock-in time
-                document.getElementById("status").innerText = "Status: Clocked In";
+    // Temporarily stop the scanner to avoid re-triggering the action
+    stopScanner();
 
-                isClockedIn = true;
-                document.getElementById("clockOutBtn").style.display = "inline"; // Show clock-out button
-            }
+    // Re-enable the scanner after a short delay (1 second)
+    setTimeout(() => {
+        startScanner(); // Restart the scanner
+    }, 1000);
 
-            localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
-        }
+    // Reset the flag after the process is done
+    isProcessing = false;
+}
 
-        function clockOut() {
-            const currentTime = new Date(); // Get the current time
-            attendanceData[currentQRCode].clockOut = currentTime.toISOString(); // Save clock-out time
+function clockOut() {
+    const currentTime = new Date(); // Get the current time
+    attendanceData[currentQRCode].clockOut = currentTime.toISOString(); // Save clock-out time
 
-            const clockInTime = new Date(attendanceData[currentQRCode].clockIn);
-            const clockOutTime = new Date(attendanceData[currentQRCode].clockOut);
-            const hoursWorked = (clockOutTime - clockInTime) / 1000 / 60 / 60; // Convert to hours
+    const clockInTime = new Date(attendanceData[currentQRCode].clockIn);
+    const clockOutTime = new Date(attendanceData[currentQRCode].clockOut);
+    const hoursWorked = (clockOutTime - clockInTime) / 1000 / 60 / 60; // Calculate hours worked
 
-            document.getElementById("status").innerText = `Status: Clocked Out (Worked: ${hoursWorked.toFixed(2)} hours)`;
-            isClockedIn = false;
-            document.getElementById("clockOutBtn").style.display = "none"; // Hide clock-out button
+    document.getElementById("status").innerText = `Status: Clocked Out (Worked: ${hoursWorked.toFixed(2)} hours)`;
+    isClockedIn = false;
+    document.getElementById("clockOutBtn").style.display = "none"; // Hide clock-out button
 
-            localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
-        }
+    localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+}
 
-        function viewAttendance() {
-            let data = JSON.parse(localStorage.getItem("attendanceData")) || {};
-            let table = "<table><tr><th>QR Code</th><th>Clock In</th><th>Clock Out</th><th>Hours Worked</th></tr>";
+function viewAttendance() {
+    let data = JSON.parse(localStorage.getItem("attendanceData")) || {};
+    let table = "<table><tr><th>QR Code</th><th>Clock In</th><th>Clock Out</th><th>Hours Worked</th></tr>";
 
-            for (const qrCode in data) {
-                const record = data[qrCode];
-                const clockInTime = new Date(record.clockIn);
-                const clockOutTime = new Date(record.clockOut);
-                const hoursWorked = (clockOutTime - clockInTime) / 1000 / 60 / 60; // Calculate hours worked
+    for (const qrCode in data) {
+        const record = data[qrCode];
+        const clockInTime = new Date(record.clockIn);
+        const clockOutTime = new Date(record.clockOut);
+        const hoursWorked = (clockOutTime - clockInTime) / 1000 / 60 / 60; // Calculate hours worked
 
-                table += `<tr>
-                    <td>${qrCode}</td>
-                    <td>${clockInTime.toLocaleString()}</td>
-                    <td>${clockOutTime.toLocaleString()}</td>
-                    <td>${hoursWorked.toFixed(2)}</td>
-                </tr>`;
-            }
+        table += `<tr>
+            <td>${qrCode}</td>
+            <td>${clockInTime.toLocaleString()}</td>
+            <td>${clockOutTime.toLocaleString()}</td>
+            <td>${hoursWorked.toFixed(2)}</td>
+        </tr>`;
+    }
 
-            table += "</table>";
-            document.getElementById("attendanceSheet").innerHTML = table;
-        }
+    table += "</table>";
+    document.getElementById("attendanceSheet").innerHTML = table;
+}
 
-        startScanner();
-    </script>
-</body>
-</html>
+startScanner();
