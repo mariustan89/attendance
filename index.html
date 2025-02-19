@@ -46,6 +46,18 @@
             background-color: rgba(0, 0, 0, 0.5);
             padding: 10px;
         }
+
+        /* Status display for clock-in/out */
+        #status {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: yellow;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+        }
     </style>
 </head>
 <body>
@@ -60,9 +72,15 @@
     <!-- Display scanned QR code data -->
     <p id="result">QR Code Data will appear here</p>
 
+    <!-- Display clock-in/out status -->
+    <p id="status">Status: Not Clocked In</p>
+
     <script>
         // Initialize the QR scanner
         const qrScanner = new Html5Qrcode("reader");
+
+        // Variable to track clock-in status
+        let isClockedIn = false;
 
         function startScanner() {
             qrScanner.start(
@@ -79,13 +97,29 @@
                     }
                 },
                 (decodedText) => {
-                    // When QR code is detected, display the result
+                    // Display the scanned QR code data
                     document.getElementById("result").innerText = decodedText;
+                    
+                    // Perform clock-in or clock-out action
+                    handleClocking(decodedText);
                 },
                 (error) => {
                     console.log(error); // Log any errors for debugging
                 }
             );
+        }
+
+        function handleClocking(qrData) {
+            // Check if QR code indicates clock-in or clock-out
+            if (isClockedIn) {
+                // If already clocked in, it's time to clock out
+                document.getElementById("status").innerText = "Status: Clocked Out";
+                isClockedIn = false;
+            } else {
+                // If not clocked in, clock in
+                document.getElementById("status").innerText = "Status: Clocked In";
+                isClockedIn = true;
+            }
         }
 
         // Start the QR scanner immediately after page load
