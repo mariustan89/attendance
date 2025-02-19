@@ -151,8 +151,10 @@
                 (decodedText) => {
                     document.getElementById("result").innerText = decodedText;
                     handleClocking(decodedText);
+                    // Stop scanning once a QR code is scanned
                     stopScanner();
-                    setTimeout(startScanner, 2000);
+                    // Show the attendance page after clocking in or out
+                    showAttendancePage();
                 },
                 (error) => {
                     console.log(error);
@@ -200,7 +202,8 @@
             localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
         }
 
-        function viewAttendance() {
+        function showAttendancePage() {
+            // Display the attendance page with clock-in and clock-out times
             let data = JSON.parse(localStorage.getItem("attendanceData")) || {};
             let table = "<table><tr><th>QR Code</th><th>Clock In</th><th>Clock Out</th><th>Hours Worked</th></tr>";
 
