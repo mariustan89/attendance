@@ -1,76 +1,142 @@
-<script>
-    const qrScanner = new Html5Qrcode("reader");
-
-    // Variable to track clock-in status
-    let isClockedIn = false;
-
-    // Store attendance data (using localStorage as a simple approach)
-    let attendanceData = JSON.parse(localStorage.getItem("attendanceData")) || {};
-
-    function startScanner() {
-        qrScanner.start(
-            { facingMode: "environment" },
-            {
-                fps: 10,
-                qrbox: (width, height) => {
-                    const qrboxSize = Math.min(width, height);
-                    return {
-                        width: qrboxSize * 0.7,
-                        height: qrboxSize * 0.5
-                    };
-                }
-            },
-            (decodedText) => {
-                document.getElementById("result").innerText = decodedText;
-                handleClocking(decodedText);
-                stopScanner();
-                setTimeout(startScanner, 2000);
-            },
-            (error) => {
-                console.log(error);
-            }
-        );
-    }
-
-    function stopScanner() {
-        qrScanner.stop().then(() => {
-            console.log("Scanner stopped");
-        }).catch((error) => {
-            console.log("Error stopping scanner: ", error);
-        });
-    }
-
-    function handleClocking(qrData) {
-        const currentTime = new Date().toLocaleString(); // Get the current time
-
-        // If the worker is already clocked in, clock them out
-        if (isClockedIn) {
-            // Save the clock-out time and calculate the hours worked
-            if (!attendanceData[qrData]) {
-                attendanceData[qrData] = { clockIn: "", clockOut: "" };
-            }
-            attendanceData[qrData].clockOut = currentTime;
-
-            const clockInTime = new Date(attendanceData[qrData].clockIn);
-            const clockOutTime = new Date(currentTime);
-            const hoursWorked = (clockOutTime - clockInTime) / 1000 / 60 / 60; // Convert milliseconds to hours
-
-            document.getElementById("status").innerText = `Status: Clocked Out (Worked: ${hoursWorked.toFixed(2)} hours)`;
-            isClockedIn = false;
-        } else {
-            // If the worker is not clocked in, clock them in
-            if (!attendanceData[qrData]) {
-                attendanceData[qrData] = { clockIn: "", clockOut: "" };
-            }
-            attendanceData[qrData].clockIn = currentTime;
-
-            document.getElementById("status").innerText = "Status: Clocked In";
-            isClockedIn = true;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
         }
 
-        // Save the updated attendance data in localStorage
-        localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
-    }
+        /* Camera Feed Area */
+        #reader {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
 
-    startScanner();
-</script>
+        /* Box to show where QR code is being scanned */
+        .scanner-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 70%;
+            height: 50%;
+            border: 2px solid rgba(0, 255, 0, 0.7); /* Green box */
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+
+        /* Display Result (QR Code data) */
+        #result {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+        }
+
+        /* Status display for clock-in/out */
+        #status {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: yellow;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>QR Scanner Test</h1>
+    
+    <!-- Camera Feed Area for QR scanning -->
+    <div id="reader"></div>
+    
+    <!-- Box overlay to help with scanning -->
+    <div class="scanner-box"></div>
+
+    <!-- Display scanned QR code data -->
+    <p id="result">QR Code Data will appear here</p>
+
+    <!-- Display clock-in/out status -->
+    <p id="status">Status: Not Clocked In</p>
+
+    <script>
+        // Initialize the QR scanner
+        const qrScanner = new Html5Qrcode("reader");
+
+        // Variable to track clock-in status
+        let isClockedIn = false;
+
+        function startScanner() {
+            qrScanner.start(
+                { facingMode: "environment" }, // Use the back camera
+                {
+                    fps: 10, // Frame rate (frames per second)
+                    qrbox: (width, height) => {
+                        // Dynamically size the QR scanning box based on the screen size
+                        const qrboxSize = Math.min(width, height);
+                        return {
+                            width: qrboxSize * 0.7,  // 70% of screen width
+                            height: qrboxSize * 0.5  // 50% of screen height
+                        };
+                    }
+                },
+                (decodedText) => {
+                    // Display the scanned QR code data
+                    document.getElementById("result").innerText = decodedText;
+                    
+                    // Perform clock-in or clock-out action
+                    handleClocking(decodedText);
+                    
+                    // Stop the scanner after one successful scan and restart after 2 seconds
+                    stopScanner();
+                    setTimeout(startScanner, 2000);  // Restart scanning after 2 seconds
+                },
+                (error) => {
+                    console.log(error); // Log any errors for debugging
+                }
+            );
+        }
+
+        function stopScanner() {
+            // Stop the QR scanner after one successful scan
+            qrScanner.stop().then(() => {
+                console.log("Scanner stopped");
+            }).catch((error) => {
+                console.log("Error stopping scanner: ", error);
+            });
+        }
+
+        function handleClocking(qrData) {
+            // Check if QR code indicates clock-in or clock-out
+            if (isClockedIn) {
+                // If already clocked in, it's time to clock out
+                document.getElementById("status").innerText = "Status: Clocked Out";
+                isClockedIn = false;
+            } else {
+                // If not clocked in, clock in
+                document.getElementById("status").innerText = "Status: Clocked In";
+                isClockedIn = true;
+            }
+        }
+
+        // Start the QR scanner immediately after page load
+        startScanner();
+    </script>
+</body>
+</html>
