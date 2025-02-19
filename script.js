@@ -43,6 +43,7 @@ async function clockInOut(workerID) {
 
 // Function to Start QR Scanner
 function startQRScanner() {
+    // Ensure the browser supports camera access
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         alert("Camera access is not supported on this browser.");
         return;
