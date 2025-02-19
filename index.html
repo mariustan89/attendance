@@ -3,144 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance System</title>
-    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <title>Simple QR Scanner</title>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
-
-    <!-- Camera feed area to scan the QR code -->
+    <h1>QR Scanner Test</h1>
     <div id="reader" style="width: 500px; height: 500px;"></div>
-
-    <!-- Display detected QR Code data (worker ID) -->
-    <p>Worker ID: <span id="workerID"></span></p>
-
-    <!-- Button to clock in/out -->
-    <button onclick="clockInOut(document.getElementById('workerID').innerText)">Clock In/Out</button>
+    <p>QR Code Data: <span id="result"></span></p>
 
     <script>
-        // Start scanning when the page loads
-        window.onload = function() {
-            console.log("Page Loaded. Starting QR scanner...");
-            startQRScanner();
-        };
+        // Initialize scanner
+        const qrScanner = new Html5Qrcode("reader");
 
-        // Function to start the QR scanner
-        function startQRScanner() {
-            console.log("startQRScanner called");
-
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                alert("Camera access is not supported on this browser.");
-                return;
-            }
-
-            // Access the camera
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(() => {
-                    console.log("Camera permission granted");
-
-                    // Initialize the scanner
-                    let scanner = new Html5QrcodeScanner("reader", {
-                        fps: 10,
-                        qrbox: 250
-                    });
-
-                    // Start scanning and handle the QR code
-                    scanner.render((decodedText) => {
-                        console.log("QR code detected:", decodedText);
-                        document.getElementById("workerID").innerText = decodedText;
-                        scanner.clear(); // Stop the scanner after detecting the QR code
-                    });
-                })
-                .catch((err) => {
-                    alert("Camera permission denied. Please enable it in Chrome settings.");
-                    console.error("Camera error:", err);
-                });
+        function startScanner() {
+            qrScanner.start(
+                { facingMode: "environment" }, // Front or back camera
+                {
+                    fps: 10,
+                    qrbox: 250
+                },
+                (decodedText) => {
+                    // Display the decoded text
+                    document.getElementById("result").innerText = decodedText;
+                },
+                (error) => {
+                    console.log(error);
+                }
+            );
         }
 
-        // Function to handle clock in/out action
-        function clockInOut(workerID) {
-            if (!workerID) {
-                alert("No QR code detected!");
-                return;
-            }
-
-            let now = new Date();
-            alert(`Clocking in/out for Worker ID: ${workerID} at ${now}`);
-        }
+        // Start scanner immediately
+        startScanner();
     </script>
-
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance System</title>
-    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
-</head>
-<body>
-
-    <!-- Camera feed area to scan the QR code -->
-    <div id="reader" style="width: 500px; height: 500px;"></div>
-
-    <!-- Display detected QR Code data (worker ID) -->
-    <p>Worker ID: <span id="workerID"></span></p>
-
-    <!-- Button to clock in/out -->
-    <button onclick="clockInOut(document.getElementById('workerID').innerText)">Clock In/Out</button>
-
-    <script>
-        // Start scanning when the page loads
-        window.onload = function() {
-            console.log("Page Loaded. Starting QR scanner...");
-            startQRScanner();
-        };
-
-        // Function to start the QR scanner
-        function startQRScanner() {
-            console.log("startQRScanner called");
-
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                alert("Camera access is not supported on this browser.");
-                return;
-            }
-
-            // Access the camera
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(() => {
-                    console.log("Camera permission granted");
-
-                    // Initialize the scanner
-                    let scanner = new Html5QrcodeScanner("reader", {
-                        fps: 10,
-                        qrbox: 250
-                    });
-
-                    // Start scanning and handle the QR code
-                    scanner.render((decodedText) => {
-                        console.log("QR code detected:", decodedText);
-                        document.getElementById("workerID").innerText = decodedText;
-                        scanner.clear(); // Stop the scanner after detecting the QR code
-                    });
-                })
-                .catch((err) => {
-                    alert("Camera permission denied. Please enable it in Chrome settings.");
-                    console.error("Camera error:", err);
-                });
-        }
-
-        // Function to handle clock in/out action
-        function clockInOut(workerID) {
-            if (!workerID) {
-                alert("No QR code detected!");
-                return;
-            }
-
-            let now = new Date();
-            alert(`Clocking in/out for Worker ID: ${workerID} at ${now}`);
-        }
-    </script>
-
 </body>
 </html>
