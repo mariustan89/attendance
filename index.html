@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Scanner Test</title>
+    <title>QR Scanner with Clock-in/Clock-out</title>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
         body {
@@ -58,10 +58,55 @@
             background-color: rgba(0, 0, 0, 0.7);
             padding: 10px;
         }
+
+        /* Attendance Sheet Section */
+        #attendanceSheet {
+            margin-top: 20px;
+            padding: 10px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table, th, td {
+            border: 1px solid white;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #333;
+        }
+
+        td {
+            background-color: #444;
+        }
     </style>
 </head>
 <body>
-    <h1>QR Scanner Test</h1>
+    <h1>QR Scanner for Clock-In/Clock-Out</h1>
     
     <!-- Camera Feed Area for QR scanning -->
     <div id="reader"></div>
@@ -75,46 +120,47 @@
     <!-- Display clock-in/out status -->
     <p id="status">Status: Not Clocked In</p>
 
+    <!-- Button to view the attendance sheet -->
+    <button onclick="viewAttendance()">View Attendance</button>
+
+    <!-- Section to display the attendance sheet -->
+    <div id="attendanceSheet"></div>
+
     <script>
-        // Initialize the QR scanner
         const qrScanner = new Html5Qrcode("reader");
 
         // Variable to track clock-in status
         let isClockedIn = false;
 
+        // Store attendance data (using localStorage as a simple approach)
+        let attendanceData = JSON.parse(localStorage.getItem("attendanceData")) || {};
+
         function startScanner() {
             qrScanner.start(
-                { facingMode: "environment" }, // Use the back camera
+                { facingMode: "environment" },
                 {
-                    fps: 10, // Frame rate (frames per second)
+                    fps: 10,
                     qrbox: (width, height) => {
-                        // Dynamically size the QR scanning box based on the screen size
                         const qrboxSize = Math.min(width, height);
                         return {
-                            width: qrboxSize * 0.7,  // 70% of screen width
-                            height: qrboxSize * 0.5  // 50% of screen height
+                            width: qrboxSize * 0.7,
+                            height: qrboxSize * 0.5
                         };
                     }
                 },
                 (decodedText) => {
-                    // Display the scanned QR code data
                     document.getElementById("result").innerText = decodedText;
-                    
-                    // Perform clock-in or clock-out action
                     handleClocking(decodedText);
-                    
-                    // Stop the scanner after one successful scan and restart after 2 seconds
                     stopScanner();
-                    setTimeout(startScanner, 2000);  // Restart scanning after 2 seconds
+                    setTimeout(startScanner, 2000);
                 },
                 (error) => {
-                    console.log(error); // Log any errors for debugging
+                    console.log(error);
                 }
             );
         }
 
         function stopScanner() {
-            // Stop the QR scanner after one successful scan
             qrScanner.stop().then(() => {
                 console.log("Scanner stopped");
             }).catch((error) => {
@@ -123,19 +169,59 @@
         }
 
         function handleClocking(qrData) {
-            // Check if QR code indicates clock-in or clock-out
+            const currentTime = new Date().toLocaleString(); // Get the current time
+
+            // If the worker is already clocked in, clock them out
             if (isClockedIn) {
-                // If already clocked in, it's time to clock out
-                document.getElementById("status").innerText = "Status: Clocked Out";
+                // Save the clock-out time and calculate the hours worked
+                if (!attendanceData[qrData]) {
+                    attendanceData[qrData] = { clockIn: "", clockOut: "" };
+                }
+                attendanceData[qrData].clockOut = currentTime;
+
+                const clockInTime = new Date(attendanceData[qrData].clockIn);
+                const clockOutTime = new Date(currentTime);
+                const hoursWorked = (clockOutTime - clockInTime) / 1000 / 60 / 60; // Convert milliseconds to hours
+
+                document.getElementById("status").innerText = `Status: Clocked Out (Worked: ${hoursWorked.toFixed(2)} hours)`;
                 isClockedIn = false;
             } else {
-                // If not clocked in, clock in
+                // If the worker is not clocked in, clock them in
+                if (!attendanceData[qrData]) {
+                    attendanceData[qrData] = { clockIn: "", clockOut: "" };
+                }
+                attendanceData[qrData].clockIn = currentTime;
+
                 document.getElementById("status").innerText = "Status: Clocked In";
                 isClockedIn = true;
             }
+
+            // Save the updated attendance data in localStorage
+            localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
         }
 
-        // Start the QR scanner immediately after page load
+        function viewAttendance() {
+            let data = JSON.parse(localStorage.getItem("attendanceData")) || {};
+            let table = "<table><tr><th>QR Code</th><th>Clock In</th><th>Clock Out</th><th>Hours Worked</th></tr>";
+
+            for (const qrCode in data) {
+                const record = data[qrCode];
+                const clockInTime = new Date(record.clockIn);
+                const clockOutTime = new Date(record.clockOut);
+                const hoursWorked = (clockOutTime - clockInTime) / 1000 / 60 / 60; // Calculate hours worked
+
+                table += `<tr>
+                    <td>${qrCode}</td>
+                    <td>${clockInTime.toLocaleString()}</td>
+                    <td>${clockOutTime.toLocaleString()}</td>
+                    <td>${hoursWorked.toFixed(2)}</td>
+                </tr>`;
+            }
+
+            table += "</table>";
+            document.getElementById("attendanceSheet").innerHTML = table;
+        }
+
         startScanner();
     </script>
 </body>
