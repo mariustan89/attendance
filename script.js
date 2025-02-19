@@ -43,15 +43,20 @@ async function clockInOut(workerID) {
 
 // Function to Start QR Scanner
 function startQRScanner() {
+    console.log("startQRScanner called");
+
     // Ensure the browser supports camera access
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         alert("Camera access is not supported on this browser.");
+        console.log("Camera access is not supported.");
         return;
     }
 
     // Request Camera Permissions
     navigator.mediaDevices.getUserMedia({ video: true })
         .then(() => {
+            console.log("Camera permission granted");
+
             let scanner = new Html5QrcodeScanner("reader", {
                 fps: 10,
                 qrbox: 250
@@ -59,6 +64,7 @@ function startQRScanner() {
 
             // When QR code is detected
             scanner.render((decodedText) => {
+                console.log("QR code detected:", decodedText);
                 document.getElementById("workerID").innerText = decodedText;
                 scanner.clear(); // Stop scanner after scan
                 clockInOut(decodedText); // Automatically log attendance
@@ -95,6 +101,7 @@ async function loadAttendance() {
 
 // Start QR scanner and load attendance on page load
 window.onload = function() {
+    console.log("Page Loaded. Starting QR scanner...");
     startQRScanner();
     loadAttendance();
 };
